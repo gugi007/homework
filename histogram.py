@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import io
 
+# 设置字体家族和字体大小
+plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']  # 优先使用SimHei，备用英文字体
+plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示为方块的问题
+plt.rcParams['font.size'] = 10  # 可选：统一设置字体大小
 
 def apply_histogram_equalization(image):
     """应用普通直方图均衡化"""
@@ -53,8 +57,13 @@ def compare_histogram_equalizations(image_path):
     he_image = apply_histogram_equalization(gray_image)
 
     # 应用CLAHE（尝试不同的参数）
+    # CLAHE 标准
+    # clipLimit（对比度限制阈值） 防止噪声过大
+    # grid_size(网格大小) 较小的网格（如 (4,4)）能增强细微纹理但可能产生块效应；较大的网格（如 (16,16)）处理更平滑但局部细节保留较少
     clahe_image_standard = apply_clahe(gray_image, clip_limit=2.0, grid_size=(8, 8))
+    # CLAHE 激进
     clahe_image_aggressive = apply_clahe(gray_image, clip_limit=4.0, grid_size=(4, 4))
+    # CLAHE 保守
     clahe_image_conservative = apply_clahe(gray_image, clip_limit=1.0, grid_size=(16, 16))
 
     # 计算直方图
@@ -63,14 +72,18 @@ def compare_histogram_equalizations(image_path):
     hist_clahe = cv2.calcHist([clahe_image_standard], [0], None, [256], [0, 256])
 
     # 创建对比可视化
+    # 创建一个有着三行四列子图的大图
+    # 给大图一个title 直方图均衡化方法对比 - 胸部X光片分析
     fig, axes = plt.subplots(3, 4, figsize=(20, 15))
     fig.suptitle('直方图均衡化方法对比 - 胸部X光片分析', fontsize=16, fontweight='bold')
 
     # 原图
     axes[0, 0].imshow(gray_image, cmap='gray')
     axes[0, 0].set_title('原始图像')
+    #axex[0,0].axis('off')，关闭坐标轴
     axes[0, 0].axis('off')
 
+    #原始图像直方图
     axes[1, 0].plot(hist_original, color='black')
     axes[1, 0].set_title('原始图像直方图')
     axes[1, 0].set_xlabel('像素值')
@@ -152,10 +165,12 @@ CLAHE优势:
 ✓ 抑制噪声放大
 ✓ 保持组织细节
 """
+
     axes[2, 3].text(0.1, 0.9, text_content, transform=axes[2, 3].transAxes,
-                    fontsize=10, verticalalignment='top', fontfamily='monospace')
+                    fontsize=10, verticalalignment='top')
 
     plt.tight_layout()
+    plt.savefig('histogram_comparison.png', dpi=300, bbox_inches='tight')  # 保存为高分辨率PNG，并裁剪空白
     plt.show()
 
     # 返回处理结果供进一步分析
@@ -227,7 +242,7 @@ def analyze_noise_suppression(original, he, clahe):
 # 使用示例
 if __name__ == "__main__":
     # 请将下面的路径替换为您的胸部X光片路径
-    image_path = "MontgomerySet/CXR_png"  # 替换为您的图像路径
+    image_path = "MontgomerySet/CXR_png/MCUCXR_0001_0.png"  # 替换为您的图像路径
 
     # 运行对比实验
     results = compare_histogram_equalizations(image_path)
