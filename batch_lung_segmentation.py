@@ -42,7 +42,7 @@ def load_ground_truth(image_path, gt_dir="GroundTruth_Masks"):
     return gt_binary
 
 
-def clahe_enhancement(gray, clip_limit=2.0, tile_grid_size=(12, 12)):
+def clahe_enhancement(gray, clip_limit=3.0, tile_grid_size=(8, 8)):
     """对比度受限的自适应直方图均衡化(CLAHE)"""
     # 先进行高斯模糊减少噪声
     blurred = cv2.GaussianBlur(gray, (3, 3), 0)
@@ -86,10 +86,10 @@ def coarse_segmentation(enhanced):
     # 2. 生成胸腔区域掩码：手动定义梯形胸腔区域，排除身体外轮廓
     chest_mask = np.zeros((img_h, img_w), dtype=np.uint8)
     # 梯形顶点坐标（根据胸片解剖学比例估算）
-    top_left = (int(img_w * 0.3), int(img_h * 0.1))
-    top_right = (int(img_w * 0.7), int(img_h * 0.1))
-    bottom_left = (int(img_w * 0.1), int(img_h * 0.9))
-    bottom_right = (int(img_w * 0.9), int(img_h * 0.9))
+    top_left = (int(img_w * 0.25), int(img_h * 0.1))  # 左移顶部左顶点
+    top_right = (int(img_w * 0.75), int(img_h * 0.1))  # 右移顶部右顶点
+    bottom_left = (int(img_w * 0.05), int(img_h * 0.95))  # 左移底部左顶点
+    bottom_right = (int(img_w * 0.95), int(img_h * 0.95))  # 右移底部右顶点
     chest_vertices = np.array([[top_left, top_right, bottom_right, bottom_left]], dtype=np.int32)
     cv2.fillPoly(chest_mask, chest_vertices, 255)  # 填充胸腔区域为白色
 
@@ -140,10 +140,10 @@ def locate_lung_regions(binary):
         # 1. 面积不能太小
         # 2. 宽高比应大于0.5（肺通常是横向延伸的）
         # 3. 不能太靠近图像边缘
-        if (region_area > 5000 and
-                aspect_ratio > 0.5 and
-                center_y > binary.shape[0] * 0.2 and
-                center_y < binary.shape[0] * 0.8):
+        if (region_area > 3000 and  # 降低最小面积阈值（原5000→3000）
+                aspect_ratio > 0.3 and  # 降低宽高比阈值（原0.5→0.3，适应形态异常的肺）
+                center_y > binary.shape[0] * 0.1 and  # 扩大纵向范围（原0.2→0.1）
+                center_y < binary.shape[0] * 0.9):  # 扩大纵向范围（原0.8→0.9）
             potential_lung_mask[labels == region_idx] = 255
 
     # 再次查找连通区域，这次只考虑潜在的肺区域
@@ -330,8 +330,8 @@ def optimize_with_morphology_and_connectivity(thresh, chest_mask):
     valid_labels = []
 
     # 设置肺野面积阈值（根据图像大小动态调整）
-    min_area = img_h * img_w * 0.04  # 肺野最小面积阈值（占图像4%）
-    max_area = img_h * img_w * 0.35  # 肺野最大面积阈值（占图像35%）
+    min_area = img_h * img_w * 0.03
+    max_area = img_h * img_w * 0.40
 
     for i in range(1, num_labels):  # 0为背景，从1开始遍历连通域
         area = stats[i, cv2.CC_STAT_AREA]  # 连通域面积
