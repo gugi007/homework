@@ -64,7 +64,7 @@ def force_closed_contours(mask):
     return closed_contours
 
 
-def create_visualization(original_path, mask_path, gt_path, dice_score=0.8324):
+def create_visualization(original_path, mask_path, gt_path, dice_score=0.8721):
     original = load_image(original_path)
     seg_mask = load_image(mask_path)
     gt_mask = load_image(gt_path)
@@ -101,7 +101,7 @@ def create_visualization(original_path, mask_path, gt_path, dice_score=0.8324):
 
 
 if __name__ == "__main__":
-    original_image_path = "MontgomerySet/CXR_png/MCUCXR_0004_0.png"
-    segmentation_mask_path = "MontgomerySet/Segmentation_Results/MCUCXR_0004_0_segmentation.png"
-    ground_truth_path = "GroundTruth_Masks/MCUCXR_0004_0.png"
+    original_image_path = "MontgomerySet/CXR_png/MCUCXR_0077_0.png"
+    segmentation_mask_path = "MontgomerySet/Segmentation_Results/MCUCXR_0077_0_segmentation.png"
+    ground_truth_path = "GroundTruth_Masks/MCUCXR_0077_0.png"
     create_visualization(original_image_path, segmentation_mask_path, ground_truth_path)
